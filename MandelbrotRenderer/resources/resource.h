@@ -1,0 +1,9 @@
+#ifndef _RESOURCE_H
+#define _RESOURCE_H
+
+#define RCT_TEXTFILE 100
+
+#define RCID_TF_SHADER_VERT 300
+#define RCID_TF_SHADER_FRAG 301
+
+#endif

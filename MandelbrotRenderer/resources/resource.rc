@@ -1,0 +1,5 @@
+#include <wx/msw/wx.rc>
+#include <resource.h>
+
+RCID_TF_SHADER_VERT RCT_TEXTFILE "mandelbrot.vert"
+RCID_TF_SHADER_FRAG RCT_TEXTFILE "mandelbrot.frag"
