@@ -6,8 +6,69 @@ void MandelbrotCanvas::Paint(wxPaintEvent& evt)
 	evt.Skip();
 }
 
+void MandelbrotCanvas::MouseMoveEvent(wxMouseEvent& evt)
+{
+	if (this->m_mouse_down)
+	{
+		int mouse_delta[2];
+		mouse_delta[0] = evt.GetPosition().x - this->m_last_mouse_position[0];
+		mouse_delta[1] = evt.GetPosition().y - this->m_last_mouse_position[1];
+
+		this->m_last_mouse_position[0] = evt.GetPosition().x;
+		this->m_last_mouse_position[1] = evt.GetPosition().y;
+
+		this->m_cam_positon += this->ScreenPosToNDCPos(mouse_delta[0], mouse_delta[1]);
+
+		this->Render();
+	}
+	else
+	{
+		this->m_last_mouse_position[0] = evt.GetPosition().x;
+		this->m_last_mouse_position[1] = evt.GetPosition().y;
+	}
+
+	evt.Skip();
+}
+
+void MandelbrotCanvas::MouseScrollEvent(wxMouseEvent& evt)
+{
+	int wheel_move_amount = evt.GetWheelRotation() / evt.GetWheelDelta();
+	if (wheel_move_amount > 0)
+	{
+		this->m_cam_zoom *= (double)2;
+		this->Render();
+	}
+	else if (wheel_move_amount < 0)
+	{
+		this->m_cam_zoom /= (double)2;
+		this->Render();
+	}
+
+	evt.Skip();
+}
+
+void MandelbrotCanvas::MouseDownEvent(wxMouseEvent& evt)
+{
+	this->m_mouse_down = true;
+}
+
+void MandelbrotCanvas::MouseUpEvent(wxMouseEvent& evt)
+{
+	this->m_mouse_down = false;
+}
+
+glm::dvec2 MandelbrotCanvas::ScreenPosToNDCPos(int x, int y)
+{
+	glm::dvec2 ndc = glm::dvec2(((double)x * (double)2) / (double)this->GetSize().x, ((double)y * (double)2) / (double)this->GetSize().y);
+	ndc.y = (double)0 - ndc.y; //screen y is in the opposite direction to NDC y
+	return ndc;
+}
+
 MandelbrotCanvas::MandelbrotCanvas(wxWindow* parent, wxWindowID id, wxGLAttributes& args) : wxGLCanvas(parent, args, id)
 {
+	this->m_cam_positon = glm::dvec2(0.0f);
+	this->m_cam_zoom = (double)1.0f;
+
 	wxGLContextAttrs ctx_attrs;
 	ctx_attrs.PlatformDefaults().CoreProfile().MajorVersion(4).MinorVersion(3).EndList();
 	this->m_glcontext = new wxGLContext(this, NULL, &ctx_attrs);
@@ -108,8 +169,16 @@ MandelbrotCanvas::MandelbrotCanvas(wxWindow* parent, wxWindowID id, wxGLAttribut
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
+	//get uniform locations
+	this->m_uniform_cam_position = glGetUniformLocation(this->m_shader_program, "cam_position");
+	this->m_uniform_cam_zoom = glGetUniformLocation(this->m_shader_program, "cam_zoom");
+
 	//set up paint event
 	this->Bind(wxEVT_PAINT, &MandelbrotCanvas::Paint, this);
+	this->Bind(wxEVT_MOUSEWHEEL, &MandelbrotCanvas::MouseScrollEvent, this);
+	this->Bind(wxEVT_MOTION, &MandelbrotCanvas::MouseMoveEvent, this);
+	this->Bind(wxEVT_LEFT_DOWN, &MandelbrotCanvas::MouseDownEvent, this);
+	this->Bind(wxEVT_LEFT_UP, &MandelbrotCanvas::MouseUpEvent, this);
 
 	this->Render();
 }
@@ -128,6 +197,9 @@ void MandelbrotCanvas::Render()
 	glViewport(0, 0, this->GetSize().x, this->GetSize().y);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glUniform2dv(this->m_uniform_cam_position, 1, glm::value_ptr(this->m_cam_positon));
+	glUniform1d(this->m_uniform_cam_zoom, this->m_cam_zoom);
 
 	glBindVertexArray(this->m_vao);
 	glDrawArrays(GL_TRIANGLES, 0, 12);
