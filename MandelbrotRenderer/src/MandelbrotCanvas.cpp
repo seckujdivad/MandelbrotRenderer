@@ -10,14 +10,10 @@ void MandelbrotCanvas::MouseMoveEvent(wxMouseEvent& evt)
 {
 	if (this->m_mouse_down)
 	{
-		int mouse_delta[2];
-		mouse_delta[0] = evt.GetPosition().x - this->m_last_mouse_position[0];
-		mouse_delta[1] = evt.GetPosition().y - this->m_last_mouse_position[1];
+		this->m_cam_positon += this->ScreenPosToNDCPos(evt.GetPosition().x, evt.GetPosition().y) - this->ScreenPosToNDCPos(this->m_last_mouse_position[0], this->m_last_mouse_position[1]);
 
 		this->m_last_mouse_position[0] = evt.GetPosition().x;
 		this->m_last_mouse_position[1] = evt.GetPosition().y;
-
-		this->m_cam_positon += this->ScreenPosToNDCPos(mouse_delta[0], mouse_delta[1]);
 
 		this->Render();
 	}
@@ -36,7 +32,13 @@ void MandelbrotCanvas::MouseScrollEvent(wxMouseEvent& evt)
 	float zoom_multiplier = std::powf(2, wheel_move_amount);
 	if (zoom_multiplier != 1)
 	{
+		double pre_zoom = this->m_cam_zoom;
 		this->m_cam_zoom *= (double)zoom_multiplier;
+		double post_zoom = this->m_cam_zoom;
+
+		glm::dvec2 mouse_pos = this->ScreenPosToNDCPos(evt.GetPosition().x, evt.GetPosition().y);
+		this->m_cam_positon = ((post_zoom / pre_zoom) * (this->m_cam_positon - mouse_pos)) + mouse_pos;
+
 		this->Render();
 	}
 
@@ -55,8 +57,9 @@ void MandelbrotCanvas::MouseUpEvent(wxMouseEvent& evt)
 
 glm::dvec2 MandelbrotCanvas::ScreenPosToNDCPos(int x, int y)
 {
-	glm::dvec2 ndc = glm::dvec2(((double)x * (double)2) / (double)this->GetSize().x, ((double)y * (double)2) / (double)this->GetSize().y);
-	ndc.y = (double)0 - ndc.y; //screen y is in the opposite direction to NDC y
+	glm::dvec2 ndc = glm::dvec2((double)x / (double)this->GetSize().x, (double)y / (double)this->GetSize().y);
+	ndc.y = (double)1 - ndc.y; //screen y is in the opposite direction to NDC y
+	ndc = (glm::dvec2(2.0f) * ndc) - glm::dvec2(1.0f);
 	return ndc;
 }
 
