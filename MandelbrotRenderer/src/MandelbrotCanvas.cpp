@@ -39,7 +39,14 @@ void MandelbrotCanvas::MouseScrollEvent(wxMouseEvent& evt)
 		glm::dvec2 mouse_pos = this->ScreenPosToNDCPos(evt.GetPosition().x, evt.GetPosition().y);
 		this->m_cam_positon = ((post_zoom / pre_zoom) * (this->m_cam_positon - mouse_pos)) + mouse_pos;
 
-		this->Render();
+		//zooming causes large changes in complexity
+		//drawing in multiple passes, the first being a low complexity test pass, allows the renderer to properly evaluate the complexity and select the new (presumably different) appropriate complexity without timing out
+		this->m_last_max_iterations = 100;
+		this->Render(false, false);
+		for (int i = 0; i < 1; i++)
+		{
+			this->Render(true, true);
+		}
 	}
 
 	evt.Skip();
@@ -172,6 +179,7 @@ MandelbrotCanvas::MandelbrotCanvas(wxWindow* parent, wxWindowID id, wxGLAttribut
 	this->m_uniform_cam_position = glGetUniformLocation(this->m_shader_program, "cam_position");
 	this->m_uniform_cam_zoom = glGetUniformLocation(this->m_shader_program, "cam_zoom");
 	this->m_uniform_window_aspect = glGetUniformLocation(this->m_shader_program, "window_aspect");
+	this->m_uniform_max_iterations = glGetUniformLocation(this->m_shader_program, "max_iterations");
 
 	//set up paint event
 	this->Bind(wxEVT_PAINT, &MandelbrotCanvas::Paint, this);
@@ -192,8 +200,40 @@ MandelbrotCanvas::~MandelbrotCanvas()
 	delete this->m_glcontext;
 }
 
-void MandelbrotCanvas::Render()
+void MandelbrotCanvas::Render(bool adjust_iterations, bool swap_buffers)
 {
+	if (adjust_iterations)
+	{
+		int new_max_iterations;
+		if (this->m_last_max_iterations == 0)
+		{
+			new_max_iterations = 1000;
+		}
+		else if (this->m_last_fps == -1) //last frametime was 0
+		{
+			new_max_iterations = this->m_last_max_iterations * 2;
+		}
+		else
+		{
+			double target_fps = 60;
+			new_max_iterations = (int)((this->m_last_fps / target_fps) * (double)this->m_last_max_iterations);
+
+			new_max_iterations = this->m_last_max_iterations + ((new_max_iterations - this->m_last_max_iterations) / 10);
+
+			new_max_iterations = std::min(new_max_iterations, (int)(1.1 * this->m_last_max_iterations));
+			new_max_iterations = std::max(new_max_iterations, 100);
+			new_max_iterations = std::min(new_max_iterations, 10000);
+		}
+		glUniform1i(this->m_uniform_max_iterations, new_max_iterations);
+		this->m_last_max_iterations = new_max_iterations;
+	}
+	else
+	{
+		glUniform1i(this->m_uniform_max_iterations, this->m_last_max_iterations);
+	}
+
+	std::clock_t start = std::clock();
+
 	glViewport(0, 0, this->GetSize().x, this->GetSize().y);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -206,7 +246,21 @@ void MandelbrotCanvas::Render()
 	glDrawArrays(GL_TRIANGLES, 0, 12);
 
 	glFlush();
-	this->SwapBuffers();
+	if (swap_buffers)
+	{
+		this->SwapBuffers();
+	}
+
+	std::clock_t end = std::clock();
+
+	if ((end - start) == 0)
+	{
+		this->m_last_fps = -1;
+	}
+	else
+	{
+		this->m_last_fps = (double)CLOCKS_PER_SEC / (double)(end - start);
+	}
 }
 
 void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)

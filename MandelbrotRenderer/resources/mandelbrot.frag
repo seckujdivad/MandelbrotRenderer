@@ -1,7 +1,7 @@
 #version 430 core
-#define MAX_ITERATIONS 1000
 
-//#define NORMALISE_ITERATIONS
+#define NORMALISE_ITERATIONS
+#define SMOOTH_SHADING
 
 layout (location = 0) out vec4 frag_out;
 
@@ -10,6 +10,7 @@ in highp vec2 vertPosition;
 uniform highp dvec2 cam_position;
 uniform highp double cam_zoom;
 uniform vec2 window_aspect;
+uniform int max_iterations;
 
 vec3 hsv2rgb(vec3 c) //source: https://stackoverflow.com/questions/15095909/from-rgb-to-hsv-in-opengl-glsl
 {
@@ -28,7 +29,7 @@ float get_mandelbrot_iterations(highp double x0, highp double y0) //source: http
 	highp dvec2 p = dvec2(0.0f);
 	int i = 0;
 	highp double x_temp;
-	while (((p.x * p.x) + (p.y * p.y) < 4) && (i < MAX_ITERATIONS))
+	while (((p.x * p.x) + (p.y * p.y) < 4) && (i < max_iterations))
 	{
 		x_temp = (p.x * p.x) - (p.y * p.y) + x0;
 		p.y = (2 * p.x * p.y) + y0;
@@ -37,7 +38,7 @@ float get_mandelbrot_iterations(highp double x0, highp double y0) //source: http
 	}
 
 #ifdef NORMALISE_ITERATIONS
-	return i + 1 - log(log2((p.x * p.x) + (p.y * p.y))); //normalise
+	return i + 1 - log(log2(float((p.x * p.x) + (p.y * p.y)))); //normalise
 #else
 	return i;
 #endif
@@ -47,5 +48,10 @@ void main()
 {
 	highp dvec2 pos = dvec2((vertPosition - cam_position).xy / cam_zoom) * dvec2(window_aspect);
 	float iterations = get_mandelbrot_iterations(pos.x, pos.y);
-	frag_out = vec4(vec3(iterations / float(MAX_ITERATIONS)), 1.0f);
+#ifdef SMOOTH_SHADING
+	float value = iterations / float(10000);
+#else
+	float value = iterations >= max_iterations * 0.5 ? 1.0f : 0.0f;
+#endif
+	frag_out = vec4(vec3(value), 1.0f);
 }

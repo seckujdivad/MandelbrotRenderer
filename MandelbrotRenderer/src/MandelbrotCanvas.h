@@ -15,6 +15,7 @@
 #include <stdexcept>
 #include <string>
 #include <cmath>
+#include <ctime>
 
 #include "Resource.h"
 
@@ -44,14 +45,18 @@ private:
 	GLuint m_uniform_cam_position;
 	GLuint m_uniform_cam_zoom;
 	GLuint m_uniform_window_aspect;
+	GLuint m_uniform_max_iterations;
 
 	glm::dvec2 ScreenPosToNDCPos(int x, int y);
+
+	double m_last_fps = 0;
+	int m_last_max_iterations = 0;
 
 public:
 	MandelbrotCanvas(wxWindow* parent, wxWindowID id, wxGLAttributes& args);
 	~MandelbrotCanvas();
 
-	void Render();
+	void Render(bool adjust_iterations = true, bool swap_buffers = true);
 };
 
 void GLAPIENTRY MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
