@@ -25,20 +25,19 @@ vec3 hsv2rgb(float h, float s, float v)
 
 float get_mandelbrot_iterations(highp double x0, highp double y0) //source: https://en.wikipedia.org/wiki/Mandelbrot_set#Computer_drawings
 {
-	highp double x = 0;
-	highp double y = 0;
+	highp dvec2 p = dvec2(0.0f);
 	int i = 0;
 	highp double x_temp;
-	while (((x * x) + (y * y) < 4) && (i < MAX_ITERATIONS))
+	while (((p.x * p.x) + (p.y * p.y) < 4) && (i < MAX_ITERATIONS))
 	{
-		x_temp = (x * x) - (y * y) + x0;
-		y = (2 * x * y) + y0;
-		x = x_temp;
+		x_temp = (p.x * p.x) - (p.y * p.y) + x0;
+		p.y = (2 * p.x * p.y) + y0;
+		p.x = x_temp;
 		i++;
 	}
 
 #ifdef NORMALISE_ITERATIONS
-	return i + 1 - log(log2(length(vec2(x, y)))); //normalise
+	return i + 1 - log(log2((p.x * p.x) + (p.y * p.y))); //normalise
 #else
 	return i;
 #endif
