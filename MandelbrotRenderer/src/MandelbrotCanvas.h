@@ -14,6 +14,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <string>
+#include <cmath>
 
 #include "Resource.h"
 
@@ -42,6 +43,7 @@ private:
 	
 	GLuint m_uniform_cam_position;
 	GLuint m_uniform_cam_zoom;
+	GLuint m_uniform_window_aspect;
 
 	glm::dvec2 ScreenPosToNDCPos(int x, int y);
 

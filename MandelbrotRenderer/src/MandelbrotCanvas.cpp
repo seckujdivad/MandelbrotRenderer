@@ -32,15 +32,11 @@ void MandelbrotCanvas::MouseMoveEvent(wxMouseEvent& evt)
 
 void MandelbrotCanvas::MouseScrollEvent(wxMouseEvent& evt)
 {
-	int wheel_move_amount = evt.GetWheelRotation() / evt.GetWheelDelta();
-	if (wheel_move_amount > 0)
+	float wheel_move_amount = ((float)evt.GetWheelRotation() / (float)evt.GetWheelDelta()) * 0.7f;
+	float zoom_multiplier = std::powf(2, wheel_move_amount);
+	if (zoom_multiplier != 1)
 	{
-		this->m_cam_zoom *= (double)2;
-		this->Render();
-	}
-	else if (wheel_move_amount < 0)
-	{
-		this->m_cam_zoom /= (double)2;
+		this->m_cam_zoom *= (double)zoom_multiplier;
 		this->Render();
 	}
 
@@ -172,6 +168,7 @@ MandelbrotCanvas::MandelbrotCanvas(wxWindow* parent, wxWindowID id, wxGLAttribut
 	//get uniform locations
 	this->m_uniform_cam_position = glGetUniformLocation(this->m_shader_program, "cam_position");
 	this->m_uniform_cam_zoom = glGetUniformLocation(this->m_shader_program, "cam_zoom");
+	this->m_uniform_window_aspect = glGetUniformLocation(this->m_shader_program, "window_aspect");
 
 	//set up paint event
 	this->Bind(wxEVT_PAINT, &MandelbrotCanvas::Paint, this);
@@ -200,6 +197,7 @@ void MandelbrotCanvas::Render()
 
 	glUniform2dv(this->m_uniform_cam_position, 1, glm::value_ptr(this->m_cam_positon));
 	glUniform1d(this->m_uniform_cam_zoom, this->m_cam_zoom);
+	glUniform2fv(this->m_uniform_window_aspect, 1, glm::value_ptr(glm::vec2((float)this->GetSize().x / (float)this->GetSize().y, 1.0f)));
 
 	glBindVertexArray(this->m_vao);
 	glDrawArrays(GL_TRIANGLES, 0, 12);
