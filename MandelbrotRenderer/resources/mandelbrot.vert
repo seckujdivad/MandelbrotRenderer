@@ -10,6 +10,7 @@ uniform vec2 window_aspect;
 void main()
 {
 	highp dvec2 pos = inPos;
-	vertPosition = vec2((pos - cam_position).xy / cam_zoom) * window_aspect;
+	//vertPosition = vec2((pos - cam_position).xy / cam_zoom) * window_aspect;
+	vertPosition = inPos;
 	gl_Position = vec4(inPos, 0.0f, 1.0f);
 }
