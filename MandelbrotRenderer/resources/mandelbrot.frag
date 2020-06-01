@@ -1,6 +1,8 @@
 #version 430 core
 #define MAX_ITERATIONS 1000
 
+//#define NORMALISE_ITERATIONS
+
 layout (location = 0) out vec4 frag_out;
 
 in highp vec2 vertPosition;
@@ -31,7 +33,11 @@ float get_mandelbrot_iterations(highp double x0, highp double y0) //source: http
 		i++;
 	}
 
+#ifdef NORMALISE_ITERATIONS
 	return i + 1 - log(log2(length(vec2(x, y)))); //normalise
+#else
+	return i;
+#endif
 }
 
 void main()
