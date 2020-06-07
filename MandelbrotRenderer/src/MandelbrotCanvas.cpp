@@ -202,33 +202,41 @@ MandelbrotCanvas::~MandelbrotCanvas()
 
 void MandelbrotCanvas::Render(bool adjust_iterations, bool swap_buffers)
 {
-	if (adjust_iterations)
+	if (this->m_fix_iterations == -1)
 	{
-		int new_max_iterations;
-		if (this->m_last_max_iterations == 0)
+		if (adjust_iterations)
 		{
-			new_max_iterations = 1000;
-		}
-		else if (this->m_last_fps == -1) //last frametime was 0
-		{
-			new_max_iterations = this->m_last_max_iterations * 2;
+			int new_max_iterations;
+			if (this->m_last_max_iterations == 0)
+			{
+				new_max_iterations = 1000;
+			}
+			else if (this->m_last_fps == -1) //last frametime was 0
+			{
+				new_max_iterations = this->m_last_max_iterations * 2;
+			}
+			else
+			{
+				double target_fps = 60;
+				new_max_iterations = (int)((this->m_last_fps / target_fps) * (double)this->m_last_max_iterations);
+
+				new_max_iterations = this->m_last_max_iterations + ((new_max_iterations - this->m_last_max_iterations) / 10);
+
+				new_max_iterations = std::min(new_max_iterations, (int)(1.1 * this->m_last_max_iterations));
+				new_max_iterations = std::max(new_max_iterations, 100);
+				new_max_iterations = std::min(new_max_iterations, 10000);
+			}
+			glUniform1i(this->m_uniform_max_iterations, new_max_iterations);
+			this->m_last_max_iterations = new_max_iterations;
 		}
 		else
 		{
-			double target_fps = 60;
-			new_max_iterations = (int)((this->m_last_fps / target_fps) * (double)this->m_last_max_iterations);
-
-			new_max_iterations = this->m_last_max_iterations + ((new_max_iterations - this->m_last_max_iterations) / 10);
-
-			new_max_iterations = std::min(new_max_iterations, (int)(1.1 * this->m_last_max_iterations));
-			new_max_iterations = std::max(new_max_iterations, 100);
-			new_max_iterations = std::min(new_max_iterations, 10000);
+			glUniform1i(this->m_uniform_max_iterations, this->m_last_max_iterations);
 		}
-		glUniform1i(this->m_uniform_max_iterations, new_max_iterations);
-		this->m_last_max_iterations = new_max_iterations;
 	}
 	else
 	{
+		this->m_last_max_iterations = this->m_fix_iterations;
 		glUniform1i(this->m_uniform_max_iterations, this->m_last_max_iterations);
 	}
 

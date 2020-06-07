@@ -1,7 +1,8 @@
 #version 430 core
 
-#define NORMALISE_ITERATIONS
+//#define NORMALISE_ITERATIONS
 #define SMOOTH_SHADING
+#define GREYSCALE
 
 layout (location = 0) out vec4 frag_out;
 
@@ -44,14 +45,32 @@ float get_mandelbrot_iterations(highp double x0, highp double y0) //source: http
 #endif
 }
 
-void main()
+float set_output_range(float iterations)
 {
-	highp dvec2 pos = dvec2((vertPosition - cam_position).xy / cam_zoom) * dvec2(window_aspect);
-	float iterations = get_mandelbrot_iterations(pos.x, pos.y);
 #ifdef SMOOTH_SHADING
 	float value = iterations / float(10000);
 #else
 	float value = iterations >= max_iterations * 0.5 ? 1.0f : 0.0f;
 #endif
-	frag_out = vec4(vec3(value), 1.0f);
+
+	//value = iterations >= max_iterations * 0.95 ? 1.0f : value;
+
+	return value;
+}
+
+vec3 sample_colour(float value)
+{
+#ifdef GREYSCALE
+	return vec3(value);
+#else
+	return hsv2rgb(value, 1.0f, 1.0f);
+#endif
+}
+
+void main()
+{
+	highp dvec2 pos = dvec2((vertPosition - cam_position).xy / cam_zoom) * dvec2(window_aspect);
+	float iterations = get_mandelbrot_iterations(pos.x, pos.y);
+
+	frag_out = vec4(sample_colour(set_output_range(iterations)), 1.0f);
 }
