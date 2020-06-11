@@ -52,7 +52,7 @@ private:
 	double m_last_fps = 0;
 	int m_last_max_iterations = 0;
 
-	int m_fix_iterations = -1;
+	int m_fix_iterations = 1000;
 
 public:
 	MandelbrotCanvas(wxWindow* parent, wxWindowID id, wxGLAttributes& args);

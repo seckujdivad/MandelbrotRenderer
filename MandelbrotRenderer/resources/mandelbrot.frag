@@ -48,7 +48,7 @@ float get_mandelbrot_iterations(highp double x0, highp double y0) //source: http
 float set_output_range(float iterations)
 {
 #ifdef SMOOTH_SHADING
-	float value = iterations / float(10000);
+	float value = iterations / float(max_iterations);
 #else
 	float value = iterations >= max_iterations * 0.5 ? 1.0f : 0.0f;
 #endif
